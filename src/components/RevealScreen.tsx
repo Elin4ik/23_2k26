@@ -139,17 +139,6 @@ export default function RevealScreen({ hero, userName, onRestart }: Props) {
               <p>🎁 Тебя ждёт подарок с твоим героем!</p>
             </motion.div>
 
-            <motion.button
-              className="btn-secondary"
-              onClick={onRestart}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1 }}
-            >
-              На главную
-            </motion.button>
           </motion.div>
         )}
       </div>
