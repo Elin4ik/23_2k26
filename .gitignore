@@ -1,0 +1,11 @@
+node_modules/
+backend/venv/
+backend/assignments.json
+backend/__pycache__/
+*.pyc
+.DS_Store
+test-results/
+t1-*.png
+t2-*.png
+t3-*.png
+*.tsbuildinfo
