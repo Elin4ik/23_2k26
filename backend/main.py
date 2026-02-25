@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 from pydantic import BaseModel
 import json
 import os
@@ -15,6 +16,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+class CacheMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        path = request.url.path
+        if path.startswith("/heroes/") or path.startswith("/assets/"):
+            response.headers["Cache-Control"] = "public, max-age=604800"
+        return response
+
+
+app.add_middleware(CacheMiddleware)
 
 DATA_FILE = os.path.join(os.path.dirname(__file__), "assignments.json")
 DIST_DIR = os.path.join(os.path.dirname(__file__), "..", "dist")

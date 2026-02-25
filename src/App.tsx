@@ -15,6 +15,13 @@ type Screen = "welcome" | "name" | "quiz" | "processing" | "reveal" | "admin";
 const ADMIN_PASSWORD = "marvel2302";
 const STORAGE_KEY = "marvel23_result";
 
+function preloadHeroImages() {
+  Object.values(heroesMap).forEach((h) => {
+    const img = new Image();
+    img.src = h.imageUrl;
+  });
+}
+
 interface SavedResult {
   userName: string;
   heroId: string;
@@ -27,6 +34,8 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    preloadHeroImages();
+
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
