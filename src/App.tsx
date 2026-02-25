@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { AnimatePresence } from "framer-motion";
 import ParticleBackground from "./components/ParticleBackground";
 import WelcomeScreen from "./components/WelcomeScreen";
@@ -12,11 +12,34 @@ import { registerUser } from "./api";
 
 type Screen = "welcome" | "name" | "quiz" | "processing" | "reveal" | "admin";
 
+const ADMIN_PASSWORD = "marvel2302";
+const STORAGE_KEY = "marvel23_result";
+
+interface SavedResult {
+  userName: string;
+  heroId: string;
+}
+
 export default function App() {
   const [screen, setScreen] = useState<Screen>("welcome");
   const [userName, setUserName] = useState("");
   const [hero, setHero] = useState<Hero | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const data: SavedResult = JSON.parse(saved);
+        const heroData = heroesMap[data.heroId];
+        if (heroData) {
+          setUserName(data.userName);
+          setHero(heroData);
+          setScreen("reveal");
+        }
+      } catch {}
+    }
+  }, []);
 
   const handleStart = () => setScreen("name");
 
@@ -25,7 +48,6 @@ export default function App() {
     setError(null);
 
     try {
-      // Register user on backend immediately to reserve a hero
       const result = await registerUser(name);
       const heroData = heroesMap[result.hero];
 
@@ -35,7 +57,11 @@ export default function App() {
 
       setHero(heroData);
 
-      // If user was already assigned, skip quiz and show result directly
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ userName: name, heroId: result.hero })
+      );
+
       if (result.already_assigned) {
         setScreen("reveal");
       } else {
@@ -60,6 +86,15 @@ export default function App() {
     setUserName("");
     setHero(null);
     setError(null);
+  };
+
+  const handleAdminClick = () => {
+    const pwd = prompt("Введите пароль администратора:");
+    if (pwd === ADMIN_PASSWORD) {
+      setScreen("admin");
+    } else if (pwd !== null) {
+      alert("Неверный пароль");
+    }
   };
 
   return (
@@ -104,18 +139,16 @@ export default function App() {
           )}
         </AnimatePresence>
 
-        {/* Admin button (hidden in corner) */}
         {screen === "welcome" && (
           <button
             className="admin-secret-btn"
-            onClick={() => setScreen("admin")}
+            onClick={handleAdminClick}
             title="Админ-панель"
           >
             ⚙️
           </button>
         )}
 
-        {/* Error overlay */}
         {error && (
           <div className="error-overlay">
             <div className="glass-card error-card">
@@ -134,4 +167,3 @@ export default function App() {
     </div>
   );
 }
-
