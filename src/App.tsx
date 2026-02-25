@@ -42,9 +42,23 @@ export default function App() {
         const data: SavedResult = JSON.parse(saved);
         const heroData = heroesMap[data.heroId];
         if (heroData) {
-          setUserName(data.userName);
-          setHero(heroData);
-          setScreen("reveal");
+          fetch("/api/status")
+            .then((r) => r.json())
+            .then((status) => {
+              const nameKey = data.userName.toLowerCase();
+              if (status.assignments && status.assignments[nameKey]) {
+                setUserName(data.userName);
+                setHero(heroData);
+                setScreen("reveal");
+              } else {
+                localStorage.removeItem(STORAGE_KEY);
+              }
+            })
+            .catch(() => {
+              setUserName(data.userName);
+              setHero(heroData);
+              setScreen("reveal");
+            });
         }
       } catch {}
     }
