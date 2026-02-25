@@ -148,7 +148,7 @@ export default function App() {
           )}
         </AnimatePresence>
 
-        {screen === "welcome" && (
+        {screen !== "admin" && (
           <button
             className="admin-secret-btn"
             onClick={handleAdminClick}
