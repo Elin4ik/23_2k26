@@ -16,6 +16,8 @@ interface Status {
 export default function AdminPanel({ onBack }: { onBack: () => void }) {
   const [status, setStatus] = useState<Status | null>(null);
   const [loading, setLoading] = useState(true);
+  const [manualName, setManualName] = useState("");
+  const [manualHero, setManualHero] = useState("");
 
   const fetchStatus = async () => {
     setLoading(true);
@@ -37,6 +39,28 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
     if (!confirm("⚠️ Сбросить ВСЕ назначения? Это действие нельзя отменить!")) return;
     await fetch("/api/reset", { method: "POST" });
     fetchStatus();
+  };
+
+  const assignedHeroIds = status ? new Set(Object.values(status.assignments)) : new Set();
+  const freeHeroes = Object.values(heroesMap).filter((h) => !assignedHeroIds.has(h.id));
+
+  const handleManualAssign = async () => {
+    const name = manualName.trim();
+    if (!name || !manualHero) return;
+    try {
+      const res = await fetch("/api/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assignments: { [name.toLowerCase()]: manualHero } }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.detail);
+      setManualName("");
+      setManualHero("");
+      fetchStatus();
+    } catch (err) {
+      alert(`Ошибка: ${err instanceof Error ? err.message : "Не удалось назначить"}`);
+    }
   };
 
   const handleExport = async () => {
@@ -158,6 +182,43 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
             <p className="admin-empty">Пока никто не прошёл тест 🙈</p>
           )}
         </div>
+
+        {/* Manual assign */}
+        {status && freeHeroes.length > 0 && (
+          <div className="admin-manual glass-card">
+            <h2 className="admin-subtitle">Вручную назначить героя</h2>
+            <div className="manual-form">
+              <input
+                type="text"
+                className="manual-input"
+                placeholder="Имя участника"
+                value={manualName}
+                onChange={(e) => setManualName(e.target.value)}
+              />
+              <select
+                className="manual-select"
+                value={manualHero}
+                onChange={(e) => setManualHero(e.target.value)}
+              >
+                <option value="">Выбрать героя...</option>
+                {freeHeroes.map((h) => (
+                  <option key={h.id} value={h.id}>
+                    {h.icon} {h.name}
+                  </option>
+                ))}
+              </select>
+              <motion.button
+                className="btn-primary manual-btn"
+                onClick={handleManualAssign}
+                disabled={!manualName.trim() || !manualHero}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Назначить
+              </motion.button>
+            </div>
+          </div>
+        )}
 
         {/* Available heroes */}
         {status && status.remaining > 0 && (
