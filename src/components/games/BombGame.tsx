@@ -19,6 +19,12 @@ type Phase = "intro" | "showing" | "input" | "correct" | "boom" | "result";
 const MAX_ROUNDS = 6;
 const TIME_PER_WIRE = 3;
 
+function pluralWires(n: number) {
+  if (n % 10 === 1 && n % 100 !== 11) return `${n} провод`;
+  if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) return `${n} провода`;
+  return `${n} проводов`;
+}
+
 export default function BombGame({ onComplete }: Props) {
   const [phase, setPhase] = useState<Phase>("intro");
   const [sequence, setSequence] = useState<number[]>([]);
@@ -226,7 +232,7 @@ export default function BombGame({ onComplete }: Props) {
                 {phase === "boom" ? "💥" : "💣"}
               </span>
               <div className="bomb-timer-display">
-                {phase === "showing" && `${sequence.length} проводов`}
+                {phase === "showing" && pluralWires(sequence.length)}
                 {phase === "input" &&
                   `${playerInput.length}/${sequence.length}`}
                 {phase === "correct" && "✓"}
