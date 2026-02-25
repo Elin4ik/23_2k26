@@ -29,7 +29,12 @@ class CacheMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(CacheMiddleware)
 
-DATA_FILE = os.path.join(os.path.dirname(__file__), "assignments.json")
+DATA_DIR = os.environ.get("DATA_DIR")
+if DATA_DIR:
+    os.makedirs(DATA_DIR, exist_ok=True)
+    DATA_FILE = os.path.join(DATA_DIR, "assignments.json")
+else:
+    DATA_FILE = os.path.join(os.path.dirname(__file__), "assignments.json")
 DIST_DIR = os.path.join(os.path.dirname(__file__), "..", "dist")
 
 HEROES = [
@@ -114,6 +119,33 @@ def reset():
     data = {"order": shuffled, "assignments": {}}
     save_data(data)
     return {"message": "Все назначения сброшены", "new_order": shuffled}
+
+
+class ImportRequest(BaseModel):
+    assignments: dict[str, str]
+
+
+@app.post("/api/import")
+def import_data(req: ImportRequest):
+    for hero in req.assignments.values():
+        if hero not in HEROES:
+            raise HTTPException(status_code=400, detail=f"Неизвестный герой: {hero}")
+
+    data = load_data()
+    imported = 0
+    for name_key, hero in req.assignments.items():
+        name_key = name_key.strip().lower()
+        if name_key and name_key not in data["assignments"]:
+            data["assignments"][name_key] = hero
+            imported += 1
+    save_data(data)
+    return {"message": f"Импортировано {imported} назначений", "total": len(data["assignments"])}
+
+
+@app.get("/api/export")
+def export_data():
+    data = load_data()
+    return data
 
 
 # Serve React static files in production

@@ -39,6 +39,51 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
     fetchStatus();
   };
 
+  const handleExport = async () => {
+    try {
+      const res = await fetch("/api/export");
+      const data = await res.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `marvel23-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert("Ошибка экспорта данных");
+    }
+  };
+
+  const handleImport = async () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        const assignments = parsed.assignments || parsed;
+        if (typeof assignments !== "object") throw new Error("Неверный формат");
+        if (!confirm(`Импортировать ${Object.keys(assignments).length} назначений?`)) return;
+        const res = await fetch("/api/import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ assignments }),
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.detail);
+        alert(result.message);
+        fetchStatus();
+      } catch (err) {
+        alert(`Ошибка импорта: ${err instanceof Error ? err.message : "Неверный файл"}`);
+      }
+    };
+    input.click();
+  };
+
   return (
     <motion.div
       className="screen admin-screen"
@@ -143,6 +188,22 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
             whileTap={{ scale: 0.95 }}
           >
             🔄 Обновить
+          </motion.button>
+          <motion.button
+            className="btn-secondary"
+            onClick={handleExport}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            📥 Экспорт данных
+          </motion.button>
+          <motion.button
+            className="btn-secondary"
+            onClick={handleImport}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            📤 Импорт данных
           </motion.button>
           <motion.button
             className="btn-danger"
